@@ -56,13 +56,144 @@ Other platforms include:
 
 * This [towards data science post](https://towardsdatascience.com/organizing-machine-learning-projects-e4f86f9fdd9c) goes through sorting different aspects of a smaller data science project into .py files held within /src.
 * This [blog article on data science project folder structure](https://dzone.com/articles/data-science-project-folder-structure) goes through an expanded definition of structuring data beyond just data processing held in src.
+* [This article also goes through project structure options](https://towardsdatascience.com/manage-your-data-science-project-structure-in-early-stage-95f91d4d0600)
+
+Our entire project structure looks like the following:
+
+
+```
+├── .env.dev
+
+├── .env.prod
+
+├── .env.prod.db
+
+├── .gitignore
+
+├── docker-compose.prod.yml
+
+├── docker-compose.yml
+
+└── services
+
+	├── nginx
+
+	│   	├── Dockerfile
+
+	│   	└── nginx.conf
+
+	└── web
+
+	    	├── Dockerfile
+
+    		├── Dockerfile.prod
+
+    		├── entrypoint.prod.sh
+
+    		├── entrypoint.sh
+
+    		├── manage.py
+
+     		├── requirements.txt
+
+    		├── project
+
+    			├── __init__.py
+
+    			├── assets.py
+
+    			├── auth.py
+
+    			├── forms.py
+    			
+    			├── models.py
+
+    			├── routes.py
+
+    			├── config.py
+
+    			└── static
+
+	    			├── /css
+
+	    			├── /dist
+
+	    			├── /img
+
+	    			├── /src
+
+		    			└── js
+
+	    			└── style.css	    			
+
+    			└── /templates
+```
+Zooming in on the /static/src folder, we have:
+
+```
+└── src
+
+│	├── features
+
+│	├── preperation
+
+│	├── preprocessing
+
+│	├── evaluation
+
+│	└──	js
+
+└── tests
+
+│	└──	unit_tests
+
+└── models
+
+│	└──	retrained_models
+
+└── data
+
+│	└──	raw_data
+
+│	└──	processed_data
+
+│	└──	user_input_data
+
+└── pipeline
+
+│	└──	model_retraining_automation_scripts
+
+└── docs
+
+	└──	Documentation
+
+	└──	Notebooks
+
 
 ```
 
-```
+>     project_name: Name of the project.
+>    src: The folder that consists of the source code related to data gathering, data preparation, feature extraction, etc.
+>    tests: The folder that consists of the code representing unit tests for code maintained with the src folder.
+>    models: The folder that consists of files representing trained/retrained models as part of build jobs, etc. The model names can be appropriately set as projectname_date_time or project_build_id (in case the model is created as part of build jobs). Another approach is to store the model files in a separate storage such as AWS S3, Google Cloud Storage, or any other form of storage.
+>    data: The folder consists of data used for model training/retraining. The data could also be stored in a separate storage system.
+>    pipeline: The folder consists of code that's used for retraining and testing the model in an automated manner. These could be docker containers related code, scripts, workflow related code, etc.
+>    docs: The folder that consists of code related to the product requirement specifications (PRS), technical design specifications (TDS), etc.
 
+> preparation: Data ingestion such as retrieving data from CSV, relational database, NoSQL, Hadoop etc. We have to retrieve data from multiple sources all the time so we better to have a dedicated function for data retrieval.
+> processing: Data transformation as source data do not fit what model needs all the time. Ideally, we have clean data but I never get it. You may say that we should have data engineering team helps on data transformation. However, we may not know what we need under studying data. One of the important requirement is both off-line training and online prediction should use same pipeline to reduce misalignment.
+> modeling: Model building such as tackling classification problem. It should not just include model training part but also evaluation part. On the other hand, we have to think about multiple models scenario. Typical use case is ensemble model such as combing Logistic Regression model and Neural Network model.
+> Test case for asserting python source code. Make sure no bug when changing code. Rather than using manual testing, automatic testing is an essential puzzle of successful project. Teammates will have confidence to modify code assuming that test case help to validate code change do not break previous usage.
+> Storing intermediate result in here only. For long term, it should be stored in model repository separately. Besides binary model, you should also store model metadata such as date, size of training data.
+> processed: To shorten model training time, it is a good idea to persist processed data. It should be generated from “processing” folder.
+
+The above descriptions can be transitioned over to a database management system, using perhaps a relational database which points over to the proper datastores held in an S3 or similar document based storage system (or object based storage system for that matter).
+
+* [I wrote a Stackoverflow Answer to a question someone had here](https://stackoverflow.com/questions/60299143/folder-structure-of-flask-app-with-machine-learning-component/67100486#67100486).
 
 # Picking a Model to Work With
+
+
 
 # Cleaning Data in Source Code
 
