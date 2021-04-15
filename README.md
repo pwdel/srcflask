@@ -246,8 +246,11 @@ Within /static, I set up the following folders as planned above:
 
 ![Project Structure](/readme_img/projectstructure.png)
 
+# Building New Database Table(s)
 
-# Cleaning Data in Source Code
+
+
+# Cleaning Human Input Data
 
 # Splitting Training and Test Set in Source Code
 
