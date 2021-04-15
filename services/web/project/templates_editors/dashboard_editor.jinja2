@@ -1,0 +1,44 @@
+{% extends "layout.jinja2" %}
+
+{% block content %}
+  <div class="form-wrapper">
+
+    <div class="logo">
+      <img
+        src="{{ url_for('static', filename='img/linguo.jpg') }}"
+        alt="logo"
+      />
+    </div>
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <div class="alert alert-warning">
+        <li>{{ message }}</li>
+      </div>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+
+    <h1>Editor Dashboard</h1>
+
+    <p>This is the editor dashboard.</p>
+
+  <p></p>
+
+  </div>
+    <a href="{{ url_for('editor_bp.documentlist_editor') }}">List of Documents</a>
+  </div>
+
+  <p></p>
+
+  <div>
+  <a href="{{ url_for('editor_bp.logouteditor') }}">Log Out</a>
+  </div>
+
+  </div>
+
+{% endblock %}

@@ -215,6 +215,37 @@ Using [Diagram.io](https://www.dbdesigner.net/) I can start to map out a hypothe
 
 ![Draft RDB Design](/readme_img/rdb_design01.png)
 
+# Initial Deployment Work
+
+## Background
+
+The most recent work I have done to make a machine learning model deployment possible can be found [here at this github repo](https://github.com/pwdel/flasksecurity).
+
+This application contains all of the necessary foundation for putting together an basic flask application with users and an administrator which controls user access.
+
+Leveraging that codebase, I can basically build a new system that auto-generates text based upon user document creation and creates automatically generated snippets based upon text inputs (of a fixed length).
+
+As discussed in a [previous Github repo](https://github.com/pwdel/textgeneratornotes), the method used to generate text will be:
+
+* We are using a pre-trained GPT2 dataset
+* gpt2tokenizer
+* tfgpt2lmheadmodel
+* Beam search
+
+[Notebook example using the above method](https://github.com/pwdel/textgeneratornotes/blob/main/notebooks/textgeneration.ipynb).
+
+## Copying and Pasting the Code and Starting Off
+
+### Copy/Pasting Code
+
+Basically I just copy the "services" and .yml files as is from the /flasksecurity project folder.
+
+### Setting Up Project Structure Above
+
+Within /static, I set up the following folders as planned above:
+
+![Project Structure](/readme_img/projectstructure.png)
+
 
 # Cleaning Data in Source Code
 
