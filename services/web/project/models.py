@@ -9,6 +9,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Integer, ForeignKey, String, Column
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+# import autodocsmodels.py
+from project.static.data.processeddata import autodocsmodels
+from project.static.data.processeddata.autodocsmodels import Autodoc, Revision
 
 
 """User Object"""
@@ -134,6 +137,12 @@ class Document(db.Model):
         'Retention',
         back_populates='document'
         )
+    """backreferences Document class on revisions table"""
+    autodocs = relationship(
+        'Revision',
+        back_populates='document'
+        )
+
 
 
 """Association Object - User Retentions of Documents"""

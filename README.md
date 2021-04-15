@@ -248,13 +248,243 @@ Within /static, I set up the following folders as planned above:
 
 # Building New Database Table(s)
 
+## Previous Work
 
+My [userlevelmodelsflask repo](https://github.com/pwdel/userlevelmodelsflask#document-model) goes through how the document model was created and what steps were taken to build tables from scratch within the models.py file.
+
+## Keeping Project Elements Separate
+
+Since at this point I'm essentially writing software on top of a previously existing app which dealt with user interfacing and document creation, it would be good to know whether I could build out all of my code, including the new data models in new folders, beyond models.py.
+
+* [This Stackexchange Answer](https://stackoverflow.com/questions/14789668/separate-sqlalchemy-models-by-file-in-flask) asks about Separate SQLAlchemy models by file in Flask and points to:
+* [This Stackexcange Q&A](https://stackoverflow.com/questions/9692962/flask-sqlalchemy-import-context-issue/9695045#9695045) responds to the previous one.
+
+The two new classes that are being created to generate tables are:
+
+* renditions
+* autodocs
+
+The, "autodocs" are automatically generated documents, while, "renditions" is a helper table that points to the original document that each autodoc is coming from.
+
+Where do these new tables rightfully fit in our project structure?  Trying our best to keep with organizational best practices, the, "documents" and "retentions" within our original model.py should probably go within, "data/userinputdata," but for project simplification purposes I will probably just keep them in models.py.
+
+As discussed above, the really, "proper" way to organize everything would be to put each, "section" of the app into a seperate container and have those containers communicate to each other via API's. However that is perhaps work for another time.
+
+### Rough Plan
+
+* If there is any need for pre-processing, perhaps a table for data features being extracted, that could perhaps go into, "/data/processeddata"
+* As mentioned above, hypothetically documents and retentions should be in, "data/userinputdata" but we will skip that for now.
+* "/data/rawdata" can probably remain empty for now, there isn't really any raw data coming in that is pre-processed - un less of course we create a holding area for document text which prior to any further processing needed.
+* autodocs and renditions will probably best fit within, "processeddata" as this is basically an output from the model.
+
+Of course the data itself are not stored in these folders, they are stored in the RDB, but the classes describing this data is stored within these folders.
+
+### Autodocsmodels.py
+
+This is similar to models.py, but it is where the autodocs table will be described.
+
+Of course using SQLAlchemy, there will be callbacks from models.py to autodocsmodels.py and vice versa, so not everything is 100% clean.
+
+#### Creating the Database Through Importing the Model
+
+Within __init__.py:
+
+```
+# activate SQLAlchemy
+db = SQLAlchemy()
+...
+
+    # initialize database plugin
+    db.init_app(app)
+
+    ...
+
+        # Create Database Models
+        db.create_all()
+```
+The important thing seems to be that within the init file, the model class gets created by grabbing from the project folder, and importing models.  This allows database models to be created with "db.create_all()" right below it.
+
+```
+        # import model class
+        from . import models
+```
+So hypothetically to import a new autodocsmodels.py class, we could do:
+
+```
+        # import users and documents model class
+        from . import models
+        # import autodocs and revisions model class
+        from /static/data/processeddata/autodocsmodels.py import autodocsmodels
+```
+Of course that would not work, as that's not how importing works - we have to create a package.
+
+The, "right" way to do imports is to create packages, [per this guide here](https://python-packaging-tutorial.readthedocs.io/en/latest/setup_py.html) and as [this stackoverflow document talks about](https://stackoverflow.com/questions/4383571/importing-files-from-different-folder). 
+
+Basically, we need to create an __init__.py file within the folder, "processeddata", per stackoverflow:
+
+>  Its very existence tells Python to treat the directory as a package.
+
+According to the python packaging tutorial, if you have file A 
+
+```
+└── static
+
+	└── __init__.py
+
+	└── data
+
+		└── __init__.py
+
+		└──	raw_data
+
+		└──	processeddata
+
+			└── __init__.py
+
+		└──	userinputdata
+```
+
+Assuming the above, we should be able to register the model with the following within the main __init__.py
+
+```
+from static.data.processeddata import autodocsmodels
+```
+When we try the above and attempt to build, we get the following error:
+
+```
+flask  |     from static.data.processeddata import autodocsmodels
+flask  | ModuleNotFoundError: No module named 'static'
+```
+From Stackoverflow:
+
+> what happens with python is that all python files are treated as modules and the folders with an init.py file are treated as packages
+
+[Python Package and Module Documentation for Python 3](https://docs.python.org/3/tutorial/modules.html#packages) is found there.
+
+Could try another method:
+
+```
+import static.data.processeddata.autodocsmodels
+```
+This also resulted in a ModuleNotFoundError.  Could it be that the top directory containing the original, main __init__.py file needs to be a part of this string?  The python3 documentation appears to suggest so.
+
+So the following format works:
+
+```
+        # import autodocs and revisions model class
+        import project.static.data.processeddata.autodocsmodels
+```
+Another way to import this would be:
+
+```
+        # import autodocs and revisions model class
+        from project.static.data.processeddata import autodocsmodels
+```
+
+## Building the Model
+
+So once we are able to successfully import the audodocsmodels.py file, we can then build the table in a similar way that we did at models.py.
+
+We import the following at the top:
+
+```
+"""Database models."""
+from . import db
+from flask_login import UserMixin, _compat
+from flask_login._compat import text_type
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import relationship
+from sqlalchemy import Integer, ForeignKey, String, Column
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+```
+Then create a sample table like so:
+
+```
+"""Autodoc Object"""
+class Autodoc(db.Model):
+    """Autodoc model."""
+    """Describes table which includes autodocs."""
+
+    __tablename__ = 'autodocs'
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+    body = db.Column(
+        db.String(1000),
+        unique=False,
+        nullable=True
+    )
+    created_on = db.Column(
+        db.DateTime,
+        index=False,
+        unique=False,
+        nullable=True
+    )
+
+    """backreferences Document class on revisions table"""
+    documents = relationship(
+        'Revision',
+        back_populates='autodoc'
+        )
+
+```
+Note the backpopulation to autodoc when referring to the documents object within the relationship function. The, "Revision" class has similar relationship properties, and a back relationship is also added to the Document class in models.py.
+
+Importing is a big more complex since we have a bit more complex folder structure now.  Within autodocmodels.py we have to import as shown:
+
+* "from project import db" rather than from . import db - the "." character represents the same or home directory, in this case we have to be explicit and point back to the parent directory by explicitly calling out, "project."
+
+Within the models.py file we had to import at length as shown above, the final result was:
+
+```
+# import autodocsmodels.py
+from project.static.data.processeddata import autodocsmodels
+from project.static.data.processeddata.autodocsmodels import Autodoc, Revision
+
+```
+
+Ensuring that our data table and list of relations works, we log into postgres:
+
+```
+               List of relations
+ Schema |    Name    | Type  |      Owner       
+--------+------------+-------+------------------
+ public | autodocs   | table | userlevels_flask
+ public | documents  | table | userlevels_flask
+ public | retentions | table | userlevels_flask
+ public | revisions  | table | userlevels_flask
+ public | users      | table | userlevels_flask
+
+```
+We are now ready to fill autodocs with text and attach/assign them to documents.
 
 # Cleaning Human Input Data
 
+### Starting off And Ensuring Data Writes Work
+
+
+### Encoding Context
+
+GPT2 has its own encoding and tokenization system which takes raw text as an input. Presumably, all of the necessary regex is already built into the system.
+
+```
+# encode context the generation is conditioned on
+input_ids = tokenizer.encode('We have a lot of new SOCs in stock', return_tensors='tf')
+```
+
+
 # Splitting Training and Test Set in Source Code
 
+This project does not include training, since we're using an already pre-trained model produced by GPT2.
+
 # Fitting Model with Training Data
+
+Again, 
 
 # Pickle the Model
 
@@ -263,6 +493,24 @@ Within /static, I set up the following folders as planned above:
 # Example Source CSV File
 
 # Route for Prediction
+
+### The GPT2 Prediction
+
+The prediction essentially happens in the following line:
+
+```
+# set no_repeat_ngram_size to 2
+beam_output = model.generate(
+    input_ids, 
+    max_length=100, 
+    num_beams=5, 
+    no_repeat_ngram_size=4, 
+    early_stopping=True
+)
+
+print("Output:\n" + 100 * '-')
+print(tokenizer.decode(beam_output[0], skip_special_tokens=True))
+```
 
 # Jsonify Output
 
