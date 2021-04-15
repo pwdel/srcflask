@@ -191,8 +191,29 @@ The above descriptions can be transitioned over to a database management system,
 
 * [I wrote a Stackoverflow Answer to a question someone had here](https://stackoverflow.com/questions/60299143/folder-structure-of-flask-app-with-machine-learning-component/67100486#67100486).
 
+### Going Beyond Monolithic Applications
+
+In a seperate repo, I have worked on putting together a Jupyter notebook which runs on a Docker container.  This is one hypothetical way that the above monolithic application all contained within one container could be seperated out into its own container.
+
+[This blogpost from Neptune.ai](https://neptune.ai/blog/data-science-machine-learning-in-containers) goes through using Docker Swarm as a way to orchestrate a multi-container machine learning system.  Using this type of approach, a load balancer can be used to access multiple different servers to create a sort of, "elastic compute" type system that expands based upon the number of users accessing a system, or load on a system.
+
+Of course hypothetically different machine learning processes could be designed to rest on different types of servers, which might cost more or less depending upon the power of the server, and might get more or less use depending upon what algorithm is being run - this would be another reason for possibly organizing a Swarm or Kubernetes style architecture with multiple containers.
+
+All of this one might categorize under the field of, "High Availability Enterprise," development.
+
 # Picking a Model to Work With
 
+For this demonstration, all that is needed is a simple machine learning model that will work with some of the data structures that we already have on hand and have been working with in this project thus far.
+
+The eventual goal is to create an automatic text generation application, based upon inputs from the user, which perhaps includes utilization of text information from the web. A sketch of what the imagined overall obejctive is:
+
+![ML Text Generation Architecture Draft](/readme_img/ml-arch01.png)
+
+* Previous learnings about what the actual algorithm may be can be found [in this repo](https://github.com/pwdel/textgeneratornotes) as well as [this repo](https://github.com/pwdel/nvidialubuntutensorflow) which I authored.
+
+Using [Diagram.io](https://www.dbdesigner.net/) I can start to map out a hypothetical expanded database which would store what we are looking to build above.
+
+![Draft RDB Design](/readme_img/rdb_design01.png)
 
 
 # Cleaning Data in Source Code
