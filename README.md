@@ -234,9 +234,18 @@ As discussed in a [previous Github repo](https://github.com/pwdel/textgeneratorn
 
 [Notebook example using the above method](https://github.com/pwdel/textgeneratornotes/blob/main/notebooks/textgeneration.ipynb).
 
-## Copying and Pasting the Code
+## Copying and Pasting the Code and Starting Off
+
+### Copy/Pasting Code
 
 Basically I just copy the "services" and .yml files as is from the /flasksecurity project folder.
+
+### Setting Up Project Structure Above
+
+Within /static, I set up the following folders as planned above:
+
+![Project Structure](/readme_img/projectstructure.png)
+
 
 # Cleaning Data in Source Code
 
