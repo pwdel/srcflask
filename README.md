@@ -484,7 +484,7 @@ This project does not include training, since we're using an already pre-trained
 
 # Fitting Model with Training Data
 
-Again, 
+Again, there is nothing within this repo which involvse training, so nothing is needed here.
 
 # Pickle the Model
 
