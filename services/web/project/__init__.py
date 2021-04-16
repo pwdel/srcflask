@@ -205,10 +205,11 @@ def on_identity_loaded(sender, identity):
 
 # create shell context processor
 from .models import db, Document, User, Retention
+from project.static.data.processeddata.autodocsmodels import Autodoc, Revision
 # python shell context processor
 @app.shell_context_processor
 def make_shell_context():
-    return {'db': db, 'User': User, 'Document': Document, 'Retention': Retention}
+    return {'db': db, 'User': User, 'Document': Document, 'Retention': Retention, 'Autodoc': Autodoc,'Revision': Revision}
 
 # Apply Content Security Policy to All 
 @app.after_request

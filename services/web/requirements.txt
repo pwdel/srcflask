@@ -11,3 +11,5 @@ cssmin==0.2.0
 jsmin==2.2.2
 WTForms-SQLAlchemy==0.2
 Flask-Principal==0.4.0
+gast==0.4.0
+transformers==4.5.1

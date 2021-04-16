@@ -17,16 +17,12 @@
   <p></p>
 
     <table class="table table-bordered table-dark">
-    <colgroup>
-    <col style="width: 100px">
-    <col style="width: 200px">
-    <col style="width: 350px">
-    </colgroup>
     <thead>
       <tr>
         <th class="tg-73oq">Editor</th>
         <th class="tg-73oq">Document Name</th>
         <th class="tg-73oq">Document Body</th>
+        <th class="tg-73oq">Autodoc Body</th>
       </tr>
     </thead>
     <tbody>
@@ -37,6 +33,7 @@
           <a href="{{ url_for('sponsor_bp.documentedit_sponsor', document_id=document.document_id) }}">{{ document.document_name }}</a>
         </td>
         <td class="tg-73oq">{{ document.document_body }}</td>
+        <td class="tg-73oq">{{ document.autodoc_body }}</td>
       </tr>
     {% endfor %}
     </tbody>
