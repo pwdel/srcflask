@@ -13,7 +13,7 @@ from flask_principal import identity_loaded, Principal, Permission, UserNeed, Ro
 # individual document access permission
 from .principalmanager import EditDocumentNeed
 
-# for printing to console
+# for printing to console, importing from path
 import sys
 
 port = int(os.environ.get("PORT", 5000))
@@ -85,8 +85,10 @@ def create_app():
         app.register_blueprint(routes.editor_bp)
         app.register_blueprint(routes.admin_bp)
 
-        # import model class
+        # import users and documents model class
         from . import models
+        # import autodocs and revisions model class
+        from project.static.data.processeddata import autodocsmodels
 
         # Create Database Models
         db.create_all()
