@@ -1,19 +1,34 @@
 # import the database
-from project import db
+from project import db, Document
 # import the autodocs models class
 
 # import autodocsmodels.py
 from project.static.data.processeddata import autodocsmodels
 from project.static.data.processeddata.autodocsmodels import Autodoc, Revision
 
-def newautodocwrite(newdocument_id):
+def autodocwrite(document_id,input_ids):
+
+	# autogenerate based upon input_ids
+	# set no_repeat_ngram_size to 4
+	# generate model
+	beam_output = model.generate(
+	    input_ids, 
+	    max_length=100, 
+	    num_beams=5, 
+	    no_repeat_ngram_size=4, 
+	    early_stopping=True
+	)
+
+	# decode and write text with tokenizer
+	autodoc_body = tokenizer.decode(beam_output[0], skip_special_tokens=True)
+
 	# create a new autodoc entry
-	newautodoc = Autodoc(
-		autodoc_body='Hello World.'
+	autodoc = Autodoc(
+		autodoc_body=autodoc_body
 		)
         
     # add retention to session and commit to database
-	db.session.add(newautodoc)
+	db.session.add(autodoc)
 	db.session.commit()
 
     # find new autodoc id number
@@ -25,13 +40,13 @@ def newautodocwrite(newdocument_id):
     # last autodoc object is autodoc index, or count-1
 	last_autodoc = all_autodocs_ordered[autodoc_index]
     # new autodoc id for retentions database is indexed last autodocid integer
-	newautodoc_id = last_autodoc.id
+	autodoc_id = last_autodoc.id
 
 
 	# create a new retention entry
 	newrevision = Revision(
-		document_id=newdocument_id,
-		autodoc_id=newautodoc_id
+		document_id=document_id,
+		autodoc_id=autodoc_id
 		)
         
     # add retention to session and commit to database

@@ -20,8 +20,9 @@ from flask_principal import Identity, identity_changed, identity_loaded, Anonymo
 import sys
 # individual document access permission
 from .principalmanager import EditDocumentPermission
+
 # import autodocwriter to automatically write autodocs after new doc is created
-from project.static.src.evaluation.autodocwriter import newautodocwrite
+from project.static.src.features.doctokenization import gpt2tokenize
 
 
 
@@ -154,8 +155,11 @@ def newdocument_sponsor():
         db.session.add(newretention)
         db.session.commit()
 
-        # write new autodoc        
-        newautodocwrite(newdocument_id)
+        # tokenize, then write new autodoc
+        input_ids = gpt2tokenize(newdocument_id)
+        # write thew new autodoc to database
+        autodocwrite(newdocument_id,input_ids)
+
 
          # message included in the route python function
         message = "New Document saved. Create another document if you would like."

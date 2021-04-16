@@ -719,11 +719,20 @@ transformers==4.5.1
 
 After installing these two packages, the image size is now 299MB up from 175MB.
 
+There may be a way to make this image size smaller by only importing specific modules from within, "transformers" -
+
+```
+tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+model = TFGPT2LMHeadModel.from_pretrained("gpt2", pad_token_id=tokenizer.eos_token_id)
+
+```
+
 # Running Tokenizer
 
-### Encoding Context - GPT2Tokenizer
+### Encoding Context - GPT2Tokenizer - doctokenization.py
 
-The first step in 
+The first step in tokenizing is to import our GPT2Tokenizer.
 
 ```
 from transformers import GPT2Tokenizer
@@ -735,10 +744,44 @@ GPT2 has its own encoding and tokenization system which takes raw text as an inp
 # encode context the generation is conditioned on
 input_ids = tokenizer.encode('We have a lot of new SOCs in stock', return_tensors='tf')
 ```
+To define which document we are going to tokenize, we need an document_id, with which we can look up our autodoc id and then write a completely automated text based upon our document body.
+
+```
+def gpt2tokenize(document_id):
+```
+From there we can run the text generator by calling a seperate function to autodocwriter.py.
+
+# Utilizing the MLModel
+
+### Envoking vs. Training
+
+The ML model can be envoked in /mlmodels/seedmlmodels as GPT2 already exists as a is pre-built by OpenAI, we are merely envoking it.
+
+```
+mlmodel = TFGPT2LMHeadModel.from_pretrained("gpt2", pad_token_id=tokenizer.eos_token_id)
+```
+### Envoking via headmodel.py
 
 
+# Prediction / Text Generation
 
+### The GPT2 Prediction - model.generate
 
+The prediction essentially happens in the following line:
+
+```
+# set no_repeat_ngram_size to 4
+beam_output = model.generate(
+    input_ids, 
+    max_length=100, 
+    num_beams=5, 
+    no_repeat_ngram_size=4, 
+    early_stopping=True
+)
+
+print("Output:\n" + 100 * '-')
+print(tokenizer.decode(beam_output[0], skip_special_tokens=True))
+```
 
 # Splitting Training and Test Set in Source Code
 
@@ -760,28 +803,6 @@ In this prjoect, there isn't a CSV being uploaded with data, it's not a linear r
 # Example Source CSV File
 
 In this project, there is no need for a CSV upload as discussed above.
-
-# Route for Prediction
-
-### TFGPT2LMHeadModel.py
-
-### The GPT2 Prediction - model.generate
-
-The prediction essentially happens in the following line:
-
-```
-# set no_repeat_ngram_size to 2
-beam_output = model.generate(
-    input_ids, 
-    max_length=100, 
-    num_beams=5, 
-    no_repeat_ngram_size=4, 
-    early_stopping=True
-)
-
-print("Output:\n" + 100 * '-')
-print(tokenizer.decode(beam_output[0], skip_special_tokens=True))
-```
 
 # Jsonify Output
 
