@@ -1,9 +1,5 @@
 """Database models."""
 from project import db
-from flask_login import UserMixin, _compat
-from flask_login._compat import text_type
-from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import relationship
 from sqlalchemy import Integer, ForeignKey, String, Column
@@ -21,7 +17,7 @@ class Autodoc(db.Model):
         db.Integer,
         primary_key=True
     )
-    body = db.Column(
+    autodoc_body = db.Column(
         db.String(1000),
         unique=False,
         nullable=True
@@ -63,7 +59,7 @@ class Revision(db.Model):
 
     autodoc_id = db.Column(
         db.Integer, 
-        db.ForeignKey('documents.id'),
+        db.ForeignKey('autodocs.id'),
         primary_key=True,
         unique=False,
         nullable=True

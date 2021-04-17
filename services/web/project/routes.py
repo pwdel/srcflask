@@ -3,9 +3,16 @@ from flask import Blueprint, redirect, render_template, flash, request, session,
 from flask import g, current_app, abort, request
 from flask_login import current_user, login_required
 from flask_login import logout_user
+# import form stuff
 from .forms import DocumentForm
-from .models import db, Document, User, Retention
 from wtforms_sqlalchemy.orm import QuerySelectField
+
+# import models
+from .models import db, Document, User, Retention
+# import autodocsmodels.py
+from project.static.data.processeddata import autodocsmodels
+from project.static.data.processeddata.autodocsmodels import Autodoc, Revision
+# import permissions stuff
 from . import sponsor_permission, editor_permission, admin_permission, approved_permission, notapproved_permission
 # for identifitaction and permission management
 from flask_principal import Identity, identity_changed, identity_loaded, AnonymousIdentity
@@ -13,6 +20,10 @@ from flask_principal import Identity, identity_changed, identity_loaded, Anonymo
 import sys
 # individual document access permission
 from .principalmanager import EditDocumentPermission
+
+# import autodocwriter to automatically write autodocs after new doc is created
+from project.static.src.features.doctokenization import gpt2tokenize
+
 
 
 # Blueprint Configuration
@@ -144,6 +155,12 @@ def newdocument_sponsor():
         db.session.add(newretention)
         db.session.commit()
 
+        # tokenize, then write new autodoc
+        input_ids = gpt2tokenize(newdocument_id)
+        # write thew new autodoc to database
+        autodocwrite(newdocument_id,input_ids)
+
+
          # message included in the route python function
         message = "New Document saved. Create another document if you would like."
         # if everything goes well, they will be redirected to documents list
@@ -164,11 +181,14 @@ def documentlist_sponsor():
     # Document objects list which includes editors for all objects
     # this logic will only work if document_objects.count() = editor_objects.count()
     # get document objects filtered by the current user
-    document_objects=db.session.query(Retention.sponsor_id,User.id,Retention.editor_id,Retention.document_id,User.name,Document.document_name,Document.document_body).\
+    # attach autodocs based upon revision helper table
+    document_objects=db.session.query(Retention.sponsor_id,User.id,Retention.editor_id,Retention.document_id,User.name,Document.document_name,Document.document_body,Autodoc.autodoc_body).\
     join(Retention, User.id==Retention.editor_id).\
     join(Document, Document.id==Retention.document_id).\
     order_by(Retention.sponsor_id).\
-    filter(Retention.sponsor_id == user_id)
+    filter(Retention.sponsor_id == user_id).\
+    join(Revision,Revision.document_id==Document.id).\
+    join(Autodoc,Autodoc.id==Revision.autodoc_id)
 
     # get a count of the document objects
     document_count = document_objects.count()
@@ -208,12 +228,14 @@ def documentedit_sponsor(document_id):
         # query for the document_id in question to get the object
         document = db.session.query(Document).filter_by(id = document_id)[0]
 
+        # Get Associated Autodoc
+        associated_autodoc = db.session.query(Document,Autodoc).join(Revision,Revision.document_id==Document.id).join(Autodoc,Autodoc.id==Revision.autodoc_id)
+
         # Getting the Retention Object to Filter  for Editor ID
         # join query to get and display current editor id via the retention object
         retention_object = db.session.query(Retention).join(User, User.id == Retention.editor_id).filter(Retention.document_id == document_id)[0]
         # get current editor_id from retention object
-        current_editor_id = retention_object.editor_id
-        
+        current_editor_id = retention_object.editor_id 
         # Getting the Editor Object
         # use this current editor object
         current_editor_object = db.session.query(User).filter(User.id == current_editor_id)[0]
@@ -246,6 +268,7 @@ def documentedit_sponsor(document_id):
             'documentedit_sponsor.jinja2',
             form=form,
             document=document,
+            autodoc=associated_autodoc, # can access body with autodoc.Autodoc.autodoc_body
             editor=editor
             )
 
@@ -303,7 +326,7 @@ def documentlist_editor():
     # Document objects and list, as well as Editor objects and list
     # this logic will only work if document_objects.count() = editor_objects.count()
     # get document objects filtered by the current user
-    document_objects = db.session.query(Document).join(Retention, Retention.document_id == Document.id).filter(Retention.editor_id == user_id)
+    document_objects = db.session.query(Document,Autodoc.autodoc_body).join(Retention, Retention.document_id == Document.id).filter(Retention.editor_id == user_id)
 
     # get a count of the document objects
     document_count = document_objects.count()
