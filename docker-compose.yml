@@ -24,6 +24,7 @@ services:
     container_name: db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+    external: true
     environment:
       - POSTGRES_USER=userlevels_flask
       - POSTGRES_PASSWORD=userlevels_flask

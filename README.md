@@ -1,10 +1,10 @@
 # srcflask
 
-Running custom source code from within a secure flask app.
+Running custom machine learning source code from within a secure flask app.
 
 # Objective
 
-Hello World.
+Build an application which generates text given inputs, following a machine learning project structure approach.
 
 # Planning Out App and Location to Store Source
 
@@ -12,7 +12,7 @@ Hello World.
 
 The idea behind storing source code in a specific location is two-fold:
 
-1. To deploy an extremely simple machine learning application, with one set model stored on the server itself is like storing an image on the server itself. 
+1. To deploy an extremely simple machine learning application, with one set model stored on the server itself is like storing an image on the server itself.
 
 2. To reserve an area where we can store files which help interact with a future data management system which is likely to be more complex. There are existing tools and plugins which could be used, as well as the capability to build our own, which would involve perhaps building a new database table which points toward stored S3 objects.  Either way, it seems like an area of the overall app to keep, "machine learningy type stuff" would be good to have apart from the rest of the application.
 
@@ -105,7 +105,7 @@ Our entire project structure looks like the following:
     			├── auth.py
 
     			├── forms.py
-    			
+
     			├── models.py
 
     			├── routes.py
@@ -320,7 +320,7 @@ So hypothetically to import a new autodocsmodels.py class, we could do:
 ```
 Of course that would not work, as that's not how importing works - we have to create a package.
 
-The, "right" way to do imports is to create packages, [per this guide here](https://python-packaging-tutorial.readthedocs.io/en/latest/setup_py.html) and as [this stackoverflow document talks about](https://stackoverflow.com/questions/4383571/importing-files-from-different-folder). 
+The, "right" way to do imports is to create packages, [per this guide here](https://python-packaging-tutorial.readthedocs.io/en/latest/setup_py.html) and as [this stackoverflow document talks about](https://stackoverflow.com/questions/4383571/importing-files-from-different-folder).
 
 Basically, we need to create an __init__.py file within the folder, "processeddata", per stackoverflow:
 
@@ -564,7 +564,7 @@ newautodoc method Procedure:
 2. New document is created in routes.py
 3. Extract new document_id in routes.py
 4. Pass new document_id in routes.py to the newautodocwrite() function
-5. newautodocwrite() function 
+5. newautodocwrite() function
 
 We write up a function and import this as a module within routes.py.
 
@@ -596,7 +596,7 @@ Double checking to ensure that the revision helper table was updated as well:
 userlevels_flask_dev=# select * from revisions;                                                                                                                 
  id | document_id | autodoc_id                                                                                                                                  
 ----+-------------+------------                                                                                                                                 
-  1 |           1 |          1 
+  1 |           1 |          1
 ```
 So to start off with, it's working fine.
 
@@ -655,7 +655,7 @@ After adding the above, we get on the flask shell:
 >>> Revision                                                                                                           
 <class 'project.static.data.processeddata.autodocsmodels.Revision'>                                                    
 >>> Autodoc                                                                                                            
-<class 'project.static.data.processeddata.autodocsmodels.Autodoc'> 
+<class 'project.static.data.processeddata.autodocsmodels.Autodoc'>
 ```
 Running queries:
 
@@ -721,12 +721,83 @@ After installing these two packages, the image size is now 299MB up from 175MB.
 
 There may be a way to make this image size smaller by only importing specific modules from within, "transformers" -
 
+After working around with these components and the code, I noticed an additional message on the flask prompt when booting up the container:
+
+```
+flask  | None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+```
+This means that I may need to install tensorflow as well.  The snippet of code where we use tokenizer is the following:
+
 ```
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
 model = TFGPT2LMHeadModel.from_pretrained("gpt2", pad_token_id=tokenizer.eos_token_id)
+```
+## Keeping the Data Volume Alive
+
+Repeatedly needing to shut down the docker container(s) and postgres volume leads to a loss of productivity. If there is a small error in the flask code, for an example an incorrect indentation, the way I'm running things now, everything needs to be rebuilt including the database, which then needs to be repopulated with data.
+
+What would be more efficient is being able to only shut down the flask container while maintaining the postgres container/volume.
+
+The Web volume is:
+```
+volumes:
+	- ./services/web/:/usr/src/theapp/
+```
+The DB volume is:
+```
+volumes:
+	- postgres_data:/var/lib/postgresql/data/
+```
+This [stackoverflow Q&A on restarting a single container](https://stackoverflow.com/questions/31466428/how-to-restart-a-single-container-with-docker-compose) seems to have some hints on how to restart just the flask container:
+
+To restart flask only without building:
 
 ```
+sudo docker-compose restart web
+
+# with time added
+
+sudo docker-compose restart -t 30 web
+```
+To restart with changes to the code only, on that one flask container:
+```
+sudo docker-compose up --detach --build web
+```
+A more drawn out version of this would be:
+
+```
+sudo docker-compose stop -t 1 web
+sudo docker-compose build web
+sudo docker-compose up --no-start web
+sudo docker-compose start web
+```
+The problem is, when "web" is restarted, all of the data in the database is deleted.
+
+[Another stackoverflow question and answer about persisting databases](https://stackoverflow.com/questions/41603505/persisting-database-using-docker-volumes) talks about using "external: true":
+
+```
+...
+volumes:
+  mypostgresdb:
+    external: true
+```
+Which means, since the volume is not automatically created, you have to run a command to create it:
+
+```
+docker volume create --name=userlevels_flask_dev
+```
+However, when we try to run our build, we get the error:
+
+```
+ERROR: The Compose file './docker-compose.yml' is invalid because:
+Unsupported config option for services.db: 'external'
+```
+This is likely because "external" was in version 2 while I am using version 3.8.
+
+[This stackoverflow on connecting to an external database](https://stackoverflow.com/questions/43762537/connect-docker-compose-to-external-database) specifies the following:
+
+
 
 # Running Tokenizer
 
@@ -772,10 +843,10 @@ The prediction essentially happens in the following line:
 ```
 # set no_repeat_ngram_size to 4
 beam_output = model.generate(
-    input_ids, 
-    max_length=100, 
-    num_beams=5, 
-    no_repeat_ngram_size=4, 
+    input_ids,
+    max_length=100,
+    num_beams=5,
+    no_repeat_ngram_size=4,
     early_stopping=True
 )
 

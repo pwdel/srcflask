@@ -4,8 +4,10 @@ from transformers import GPT2Tokenizer
 # import models
 from project.models import db, Document
 
-
 def gpt2tokenize(document_id):
+
+	# define GPT2 as tokenzier
+	tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
 	# look up the document text
 	document_body = db.session.query(Document).filter_by(id = document_id)[0].document_body
