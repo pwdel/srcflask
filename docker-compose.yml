@@ -23,8 +23,7 @@ services:
     image: postgres:13-alpine
     container_name: db
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
-    external: true
+      - ./postgres_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_USER=userlevels_flask
       - POSTGRES_PASSWORD=userlevels_flask
