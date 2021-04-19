@@ -2,6 +2,7 @@ import click
 from flask.cli import FlaskGroup
 
 from project import app, db
+from project.models import User
 
 # from previous command line control
 # from project import User
@@ -15,11 +16,29 @@ def create_db():
     db.session.commit()
 
 
-# previous command line control 
-# @cli.command("seed_db")
-# def seed_db():
-#    db.session.add(User(email="test@test123.net"))
-#    db.session.commit()
+# previous command line control
+@cli.command("seed_db")
+def seed_db():
+    user = User(name='Person Admin', email='admin@test.com', organization='WhateverCo', user_type='admin')
+    # use our set_password method
+    user.set_password('password')
+    # commit our new user record and log the user in
+    db.session.add(user)
+    db.session.commit()
+    # add sponsor initial user
+    user = User(name='Sponsory Sponsington', email='test@test.com', organization='SponsorCo', user_type='sponsor',user_status='approved')
+    # use our set_password method
+    user.set_password('123456')
+    # commit our new user record and log the user in
+    db.session.add(user)
+    db.session.commit()
+    # add editor initial user
+    user = User(name='Editor Edintarian', email='edit@test.com', organization='EditCo', user_type='editor',user_status='approved')
+    # use our set_password method
+    user.set_password('123456')
+    # commit our new user record and log the user in
+    db.session.add(user)
+    db.session.commit()
 
 
 @cli.command("test_message")

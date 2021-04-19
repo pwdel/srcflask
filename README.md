@@ -797,7 +797,99 @@ This is likely because "external" was in version 2 while I am using version 3.8.
 
 [This stackoverflow on connecting to an external database](https://stackoverflow.com/questions/43762537/connect-docker-compose-to-external-database) specifies the following:
 
+Attempt to use:
 
+```
+- ./postgres_data:/var/lib/postgresql/data/
+```
+Rather than:
+```
+- postgres_data:/var/lib/postgresql/data/
+```
+However this does not seem to matter.
+
+### Considering Our Strategy
+
+[This article from 2016, "Thou Shalt Not Put a Database Inside a Container"](https://patrobinson.github.io/2016/11/07/thou-shalt-not-run-a-database-inside-a-container/) talks about how putting a database inside a container is undesirable for a few reasons:
+
+* Stateless databases are OK (meaning no record of previous interactions, server does not require a previous record)
+* Databases in production can have a lot of problems - basically the [Byzantine General's problem](https://en.wikipedia.org/wiki/Byzantine_fault#The_Byzantine_Generals.27_Problem) where a number of components have failed, but there is little information about what has failed and what has not failed.
+
+Distributed systems are mentioned to be, "hard," in that above source as well as in [this stackoverflow answer](https://stackoverflow.com/questions/42156308/how-to-prevent-database-docker-from-being-rebuilt-and-losing-production-data) which points to the [Docker Volumes Approach](https://docs.docker.com/storage/volumes/) to database management.
+
+Another strategy would be to create a management function which automatically bootstraps the database, at least with an administrator, and at least on development mode. This might be a better route for now, since, "distributed systems are hard," and it's unclear how to go about persisting the docker volume.
+
+#### Seeding Database in Manage.py
+
+Reviewing our setup:
+
+##### docker-compose.yml
+
+* FLASK_ENV=development
+* command: python manage.py run -h 0.0.0.0
+* Dockerfile -> ENTRYPOINT ["/usr/src/theapp/entrypoint.sh"]
+* entrypoint.sh -> python manage.py create_db
+
+##### docker-compose.prod.yml
+
+* dockerfile: Dockerfile.prod
+* FLASK_ENV=production
+* Dockerfile.prod -> ENTRYPOINT ["/home/app/web/entrypoint.prod.sh"]
+* entrypoint.prod.sh -> python manage.py create_db
+* entrypoint.prod.sh -> python manage.py make_shell_context
+
+Note, there is no function, "make_shell_context" within manage.py for prod, however there is one under the main __init__.py:
+
+```
+@app.shell_context_processor
+def make_shell_context():
+```
+##### Adding Seed to Database on manage.py
+
+I added this command functionality:
+
+```
+# previous command line control
+@cli.command("seed_db")
+def seed_db():
+    user = User(name='Person Admin', email='admin@test.com', organization='WhateverCo', user_type='admin')
+    # use our set_password method
+    user.set_password('password')
+    # commit our new user record and log the user in
+    db.session.add(user)
+    db.session.commit()
+```
+Then, within entrypoint.sh, I added:
+
+```
+python manage.py seed_db
+```
+In theory this should add the admin user upon startup within dev mode. However, since seed_db is not called on production, it should not add these users in production mode.
+
+When attempting this, manage.py is not able to create the user because, "User" is not defined by the time seed_db gets called - it needs to be imported with:
+
+```
+from project.models import User
+```
+After adding this, it works.
+
+So, we should add additional users with the seed_database function, as well as any other items we might need in the database.
+
+```
+user = User(name='Sponsory Sponsington', email='test@test.com', organization='SponsorCo', user_type='sponsor',user_status='approved')
+# use our set_password method
+user.set_password('123456')
+# commit our new user record and log the user in
+db.session.add(user)
+db.session.commit()
+
+user = User(name='Editor Edintarian', email='edit@test.com', organization='EditCo', user_type='editor',user_status='approved')
+# use our set_password method
+user.set_password('123456')
+# commit our new user record and log the user in
+db.session.add(user)
+db.session.commit()
+```
 
 # Running Tokenizer
 

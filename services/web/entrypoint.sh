@@ -13,4 +13,8 @@ fi
 
 python manage.py create_db
 
+echo "Database created."
+
+python manage.py seed_db
+
 exec "$@"
