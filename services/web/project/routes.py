@@ -23,7 +23,7 @@ from .principalmanager import EditDocumentPermission
 
 # import autodocwriter to automatically write autodocs after new doc is created
 from project.static.src.features.doctokenization import gpt2tokenize
-
+from project.static.src.evaluation.autodocwriter import autodocwrite
 
 
 # Blueprint Configuration

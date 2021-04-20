@@ -1,5 +1,5 @@
 # set base image (host OS)
-FROM python:3.9-slim-buster
+FROM python:3.8-slim-buster
 
 # set the working directory in the container
 WORKDIR /usr/src/theapp
@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y netcat
 
 # install dependencies
 RUN pip install --upgrade pip
+RUN pip install -q tensorflow==2.2
 
 # copy the content of the local src directory to the working directory
 COPY ./requirements.txt /usr/src/theapp/requirements.txt

@@ -1,12 +1,23 @@
 # import the database
-from project import db, Document
-# import the autodocs models class
+from project import db
+# import the transformers GPT2 head model
+from transformers import TFGPT2LMHeadModel
+# import tokenizer
+from transformers import GPT2Tokenizer
 
+
+# import the autodocs models class
 # import autodocsmodels.py
 from project.static.data.processeddata import autodocsmodels
 from project.static.data.processeddata.autodocsmodels import Autodoc, Revision
 
 def autodocwrite(document_id,input_ids):
+
+	# set GPT2 tokenizer
+	tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+	# set model
+	model = TFGPT2LMHeadModel.from_pretrained("gpt2", pad_token_id=tokenizer.eos_token_id)
 
 	# autogenerate based upon input_ids
 	# set no_repeat_ngram_size to 4
