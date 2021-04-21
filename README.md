@@ -728,6 +728,8 @@ flask  | None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won
 ```
 This means that I may need to install tensorflow as well.  The snippet of code where we use tokenizer is the following:
 
+[This Tensorflow](https://www.tensorflow.org/install/pip) which talks about installing tensorflow via pip.
+
 ```
 tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
@@ -806,7 +808,7 @@ Rather than:
 ```
 - postgres_data:/var/lib/postgresql/data/
 ```
-However this does not seem to matter.
+However this does not seem to matter.  It appears increasingly complex to be able to manage databases within volume, both in practice and with doing some additional reading.
 
 ### Considering Our Strategy
 
@@ -891,6 +893,8 @@ db.session.add(user)
 db.session.commit()
 ```
 
+This works, at least temporarily, for development purposes, to seed the database and allow a stateless system to work immediately and allow us to test code moving forward.
+
 # Running Tokenizer
 
 ### Encoding Context - GPT2Tokenizer - doctokenization.py
@@ -914,17 +918,76 @@ def gpt2tokenize(document_id):
 ```
 From there we can run the text generator by calling a seperate function to autodocwriter.py.
 
-# Utilizing the MLModel
+#### Managing and Installing Tensorflow
 
-### Envoking vs. Training
-
-The ML model can be envoked in /mlmodels/seedmlmodels as GPT2 already exists as a is pre-built by OpenAI, we are merely envoking it.
+Note that when starting up the server on localhost, the following message appears:
 
 ```
-mlmodel = TFGPT2LMHeadModel.from_pretrained("gpt2", pad_token_id=tokenizer.eos_token_id)
+flask  | None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
 ```
-### Envoking via headmodel.py
+Basically Tensorflow is not available, because it's not found.  Why is this?  We can't add tensorflow into the requirements.txt file, because there's an error.  
 
+Tensorflow recommends being installed by pip.  With [this Colab notebook](https://colab.research.google.com/drive/17Cqi-9anYTvnmIoSMCGUe7Ot6lGG0SH0), tensorflow was installed via pip as follows:
+
+```
+!pip install -q tensorflow==2.1
+```
+We can attempt to install tensorflow as follows, putting the same method we used in our Colab notebook right into the Dockerfile. Note, this is tensorflow-cpu, not tensorflow-gpu, which we would need to specify.
+
+```
+# install dependencies
+RUN pip install --upgrade pip
+RUN pip install -q tensorflow==2.1
+
+```
+When we attempt this, we get:
+
+```
+RROR: Could not find a version that satisfies the requirement tensorflow==2.1                                                                                                             
+ERROR: No matching distribution found for tensorflow==2.1
+
+```
+
+From this [StackExchange answer](https://stackoverflow.com/questions/48720833/could-not-find-a-version-that-satisfies-the-requirement-tensorflow):
+
+```
+Tensorflow only supports Python 3.5 to 3.8
+```
+
+So, we can attempt to downgrade our Python version to 3.8.  Looking at [Docker hub for python](https://hub.docker.com/_/python) - we see [3.8-slim-buster](https://github.com/docker-library/python/blob/cb9a39a6c48d4606a68ae8f986373c9c64d430b5/3.8/buster/Dockerfile) exists. However, once again we get:
+
+```
+ERROR: Could not find a version that satisfies the requirement tensorflow==2.1
+ERROR: No matching distribution found for tensorflow==2.1                                                                                                                                  
+The command '/bin/sh -c pip install -q tensorflow==2.1' returned a non-zero code: 1
+```
+
+From the tensorflow website, "Python 3.6–3.8 ... Python 3.8 support requires TensorFlow 2.2 or later."  
+
+After switching to tensorflow 2.2, we get:
+
+```
+Attempting uninstall: gast                                                                                                                                                               
+    Found existing installation: gast 0.3.3                                                                                                                                                
+    Uninstalling gast-0.3.3:                                                                                                                                                               
+      Successfully uninstalled gast-0.3.3                                                                                                                                                  
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.             
+tensorflow 2.2.0 requires gast==0.3.3, but you have gast 0.4.0 which is incompatible.
+```
+So, changing the gast version and starting again, and it works!
+
+* Our image size is now 2.53GB, up from 199MB, with a large majority of the size increase coming from Tensorflow.
+
+### NameError: name 'autodocwrite' is not defined
+
+This error came from our routes.py file.
+
+First off, the function is called autodocwriter.py and the function is autodocwrite.
+
+```
+from project.static.src.evaluation.autodocwriter import autodocwrite
+```
+Once we do this however, we get a circular import: "ImportError: cannot import name 'Document' from partially initialized module 'project'"  That being said, it does not appear that, "Document" is necessary for this function, so we just eliminate it.
 
 # Prediction / Text Generation
 
@@ -945,6 +1008,59 @@ beam_output = model.generate(
 print("Output:\n" + 100 * '-')
 print(tokenizer.decode(beam_output[0], skip_special_tokens=True))
 ```
+
+When we try this after the above modifications we get:
+
+```
+File "/usr/src/theapp/project/static/src/evaluation/autodocwriter.py", line 14, in autodocwrite
+
+beam_output = model.generate(
+
+NameError: name 'model' is not defined
+```
+This is because we have to set:
+
+```
+model = TFGPT2LMHeadModel.from_pretrained("gpt2", pad_token_id=tokenizer.eos_token_id)
+```
+
+Once we have corrected the above, we get the following output on our console while the text is generated:
+
+```
+Downloading: 100%|██████████| 1.04M/1.04M [00:00<00:00, 5.16MB/s]
+Downloading: 100%|██████████| 456k/456k [00:00<00:00, 2.87MB/s]
+Downloading: 100%|██████████| 1.36M/1.36M [00:00<00:00, 5.44MB/s]
+flask  | 2021-04-20 21:47:47.794313: W tensorflow/stream_executor/platform/default/dso_loader.cc:55] Could not load dynamic library 'libcuda.so.1'; dlerror: libcuda.so.1: cannot open shared object file: No such file or directory
+flask  | 2021-04-20 21:47:47.794354: E tensorflow/stream_executor/cuda/cuda_driver.cc:313] failed call to cuInit: UNKNOWN ERROR (303)
+flask  | 2021-04-20 21:47:47.794394: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:156] kernel driver does not appear to be running on this host (f08bbcde3975): /proc/driver/nvidia/version does not exist
+flask  | 2021-04-20 21:47:47.794745: I tensorflow/core/platform/cpu_feature_guard.cc:143] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+flask  | 2021-04-20 21:47:47.799547: I tensorflow/core/platform/profile_utils/cpu_utils.cc:102] CPU Frequency: 3392000000 Hz
+flask  | 2021-04-20 21:47:47.799752: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x7f08c0000b20 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
+flask  | 2021-04-20 21:47:47.799783: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
+Downloading: 100%|██████████| 665/665 [00:00<00:00, 276kB/s]
+Downloading: 100%|██████████| 498M/498M [00:43<00:00, 11.4MB/s] 
+flask  | 2021-04-20 21:48:32.818042: W tensorflow/python/util/util.cc:329] Sets are not currently considered sequences, but this may change in the future, so consider avoiding using them.
+flask  | All model checkpoint layers were used when initializing TFGPT2LMHeadModel.
+flask  | 
+flask  | All the layers of TFGPT2LMHeadModel were initialized from the model checkpoint at gpt2.
+flask  | If your task is similar to the task the model of the checkpoint was trained on, you can already use TFGPT2LMHeadModel for predictions without further training.
+
+```
+
+
+# Utilizing the MLModel
+
+### Envoking vs. Training
+
+The ML model can be envoked in /mlmodels/seedmlmodels as GPT2 already exists as a is pre-built by OpenAI, we are merely envoking it.
+
+```
+mlmodel = TFGPT2LMHeadModel.from_pretrained("gpt2", pad_token_id=tokenizer.eos_token_id)
+```
+### Envoking via headmodel.py
+
+
+
 
 # Splitting Training and Test Set in Source Code
 
