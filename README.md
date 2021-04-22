@@ -1047,19 +1047,37 @@ flask  | If your task is similar to the task the model of the checkpoint was tra
 
 ```
 
+#### Model Checkpoint Layers - HeadModel Initialized from Model Checkpoint at GPT2
+
+The note, "If your task is similar to the task the model of the checkpoint was trained on, you can already use TFGPT2LMHeadModel for predictions without further training."
+
+* When first running the output for Autodoc, the response was slower - it took time for the CPU to update and, "train" the model.
+* Our code does not explicitly train the model, evidently there is some kind of training going on however, but we did not instruct the GPT2 system to train itself explicitly.
+* Running the call a second time made the call go, "faster" evidently because we're not training the model.
+
 
 # Utilizing the MLModel
-
-### Envoking vs. Training
-
-The ML model can be envoked in /mlmodels/seedmlmodels as GPT2 already exists as a is pre-built by OpenAI, we are merely envoking it.
 
 ```
 mlmodel = TFGPT2LMHeadModel.from_pretrained("gpt2", pad_token_id=tokenizer.eos_token_id)
 ```
-### Envoking via headmodel.py
+
+From the [documentation here](https://huggingface.co/transformers/model_doc/gpt2.html):
+
+> GPT-2 is a large transformer-based language model with 1.5 billion parameters, trained on a dataset[1] of 8 million web pages. GPT-2 is trained with a simple objective: predict the next word, given all of the previous words within some text. The diversity of the dataset causes this simple goal to contain naturally occurring demonstrations of many tasks across diverse domains. GPT-2 is a direct scale-up of GPT, with more than 10X the parameters and trained on more than 10X the amount of data.
+
+There is a [sample GPT2 writer posted here](https://transformer.huggingface.co/doc/gpt2-large).
 
 
+[TFGPT2LMHeadModel](https://huggingface.co/transformers/model_doc/gpt2.html#tfgpt2lmheadmodel) is...
+
+> The GPT2 Model transformer with a language modeling head on top (linear layer with weights tied to the input embeddings).  This model inherits from TFPreTrainedModel. Check the superclass documentation for the generic methods the library implements for all its model (such as downloading or saving, resizing the input embeddings, pruning heads etc.) This model is also a tf.keras.Model subclass. 
+
+So basically, the word embeddings are already performed, and a linear layer with weights tied to the input embeddings was created.
+
+[TFPreTrainedModel](https://huggingface.co/transformers/main_classes/model.html#transformers.TFPreTrainedModel) is the 
+
+> takes care of storing the configuration of the models and handles methods for loading, downloading and saving models as well as a few methods common to all models to: resize the input embeddings, prune heads in the self-attention heads.
 
 
 # Splitting Training and Test Set in Source Code
@@ -1073,7 +1091,7 @@ This project iteration does not include fitting, since we're using an already pr
 
 # "Pickle" the Model (Or Download the Model)
 
-Again, there is nothing within this repo which involvse training, so nothing is needed here.
+Again, there is nothing within this repo which involvse training, so nothing is needed here.  Basically the model was already, "Pickled as TFGPT2LMHeadModel".
 
 # Request.py File for File
 
@@ -1083,11 +1101,117 @@ In this prjoect, there isn't a CSV being uploaded with data, it's not a linear r
 
 In this project, there is no need for a CSV upload as discussed above.
 
+# Clean Up User Output
+
+## Autodoc Should be More Descriptive
+
+I changed all of the references to, "Autodoc" to say, "Machine Generated Text"
+
+## The Editor Can't See the Document Body or Autodoc Result
+
+The method that works within the sponsor documents is:
+
+```
+    document_objects=db.session.query(Retention.sponsor_id,User.id,Retention.editor_id,Retention.document_id,User.name,Document.document_name,Document.document_body,Autodoc.autodoc_body).\
+    join(Retention, User.id==Retention.editor_id).\
+    join(Document, Document.id==Retention.document_id).\
+    order_by(Retention.sponsor_id).\
+    filter(Retention.sponsor_id == user_id).\
+    join(Revision,Revision.document_id==Document.id).\
+    join(Autodoc,Autodoc.id==Revision.autodoc_id)
+
+    # get a count of the document objects
+    document_count = document_objects.count()
+    
+    # blank list to append to for documents and editors
+    document_list=[]
+
+    # loop through document objects
+    for counter in range(0,document_count):
+        document_list.append(document_objects[counter])
+
+    # show list of document names
+    documents = document_list
+
+```
+From the above, one small point had to be changed:
+
+```
+filter(Retention.editor_id == user_id).\
+```
+
+## Pre-Fill The Editable Text In the Box
+
+This could be moved to a future project in which I improve the UX of the application overall.
+
+## Autodoc Body Does Not Show Up on Individual Sponsor Edit Document
+
+Previously, the app was not appropriately displaying results on the, "individual" document results page, where you go to edit documents.  In order to properly display the autodoc, I had to add the following snippet:
+
+```
+associated_autodoc = db.session.query(Document,Autodoc).join(Revision,Revision.document_id==Document.id).join(Autodoc,Autodoc.id==Revision.autodoc_id).filter(Revision.document_id == document_id)[0].Autodoc
+```
+## Editor Not Able to View Individual Document
+
+### Individual Document Link Correction
+
+For some reason, it's linking us to:
+
+http://localhost:5000/editor/documents/3
+
+rather than:
+
+http://localhost:5000/editor/documents/1
+
+When we visit this document, /1, we get  a jinja error.
+
+Turning the route sqlalchemy query into one line:
+
+```
+document_objects=db.session.query(Retention.sponsor_id,User.id,Retention.editor_id,Retention.document_id,User.name,Document.document_name,Document.document_body,Autodoc.autodoc_body).join(Retention, User.id==Retention.editor_id).join(Document, Document.id==Retention.document_id).order_by(Retention.sponsor_id).filter(Retention.editor_id == user_id).join(Revision,Revision.document_id==Document.id).join(Autodoc,Autodoc.id==Revision.autodoc_id)
+```
+
+Looking closer at the truncated result:
+
+```
+(2, 3, 3, 1, 1, 'Editor Edintarian', 'How do I mow my lawn?', 'How do I mow my lawn?', "How do I mow my lawn?\n\nYou can mow your lawn, but you can...)
+```
+
+Basically our jinja needs to access document.document_id rather than document.id.  Once this was done, the link works.
+
+### Populating Autodoc into Individual Editor Document
+
+Add the associated_autodoc object:
+
+```
+associated_autodoc = db.session.query(Document,Autodoc).join(Revision,Revision.document_id==Document.id).join(Autodoc,Autodoc.id==Revision.autodoc_id).filter(Revision.document_id == document_id)[0].Autodoc
+```
+
+Pass the associated autodoc into the route:
+
+```
+autodoc=associated_autodoc, # can access body with autodoc.Autodoc.autodoc_body
+```
+
+Then update the jinja file appropriately.
+
 # Jsonify Output
+
+This could be done in a future project.
 
 # Conclusion
 
 # Future Work
+
+* Text Generation Quality
+* 
+* Jsonify Project
+* Pre-Fill Text Into Editing Box from Previous Generation
+* Side By Side Editing
+* GPU Capability
+* Further Text Generation Research
+* Scraping Websites
+* UX Interaction Letting User Know Server is Working (basically redirect to next page, then perform the autodocument generation in the background)
 
 # Resources
 

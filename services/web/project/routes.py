@@ -229,7 +229,7 @@ def documentedit_sponsor(document_id):
         document = db.session.query(Document).filter_by(id = document_id)[0]
 
         # Get Associated Autodoc
-        associated_autodoc = db.session.query(Document,Autodoc).join(Revision,Revision.document_id==Document.id).join(Autodoc,Autodoc.id==Revision.autodoc_id)
+        associated_autodoc = db.session.query(Document,Autodoc).join(Revision,Revision.document_id==Document.id).join(Autodoc,Autodoc.id==Revision.autodoc_id).filter(Revision.document_id == document_id)[0].Autodoc
 
         # Getting the Retention Object to Filter  for Editor ID
         # join query to get and display current editor id via the retention object
@@ -326,18 +326,24 @@ def documentlist_editor():
     # Document objects and list, as well as Editor objects and list
     # this logic will only work if document_objects.count() = editor_objects.count()
     # get document objects filtered by the current user
-    document_objects = db.session.query(Document,Autodoc.autodoc_body).join(Retention, Retention.document_id == Document.id).filter(Retention.editor_id == user_id)
+    document_objects=db.session.query(Retention.sponsor_id,User.id,Retention.editor_id,Retention.document_id,User.name,Document.document_name,Document.document_body,Autodoc.autodoc_body).\
+    join(Retention, User.id==Retention.editor_id).\
+    join(Document, Document.id==Retention.document_id).\
+    order_by(Retention.sponsor_id).\
+    filter(Retention.editor_id == user_id).\
+    join(Revision,Revision.document_id==Document.id).\
+    join(Autodoc,Autodoc.id==Revision.autodoc_id)
 
     # get a count of the document objects
     document_count = document_objects.count()
     
     # blank list to append to for documents and editors
     document_list=[]
-    
+
     # loop through document objects
     for counter in range(0,document_count):
         document_list.append(document_objects[counter])
-    
+
     # show list of document names
     documents = document_list
 
@@ -366,6 +372,10 @@ def documentedit_editor(document_id):
         # Getting the Document Object
         # query for the document_id in question to get the object
         document = db.session.query(Document).filter_by(id = document_id)[0]
+
+        # find the associated autodoc
+        associated_autodoc = db.session.query(Document,Autodoc).join(Revision,Revision.document_id==Document.id).join(Autodoc,Autodoc.id==Revision.autodoc_id).filter(Revision.document_id == document_id)[0].Autodoc
+
         
         if form.validate_on_submit():
             # take new document
@@ -385,6 +395,7 @@ def documentedit_editor(document_id):
             'documentedit_editor.jinja2',
             form=form,
             document=document,
+            autodoc=associated_autodoc # can access body with autodoc.Autodoc.autodoc_body
             )
 
     # abort if permission not satisfied

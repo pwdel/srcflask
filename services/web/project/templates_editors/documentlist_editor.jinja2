@@ -21,15 +21,17 @@
         <tr>
           <th class="tg-73oq">Document Name</th>
           <th class="tg-73oq">Document Body</th>
+          <th class="tg-73oq">Machine Generated Text</th>
         </tr>
       </thead>
       <tbody>
       {% for document in documents %}
         <tr>
           <td class="tg-73oq">
-            <a href="{{ url_for('editor_bp.documentedit_editor', document_id=document.id) }}">{{ document.document_name }}</a>
+            <a href="{{ url_for('editor_bp.documentedit_editor', document_id=document.document_id) }}">{{ document.document_name }}</a>
           </td>
           <td class="tg-73oq">{{ document.document_body }}</td>
+          <td class="tg-73oq">{{ document.autodoc_body }}</td>
         </tr>
       {% endfor %}
       </tbody>
