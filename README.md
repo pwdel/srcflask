@@ -2,6 +2,18 @@
 
 Running custom machine learning source code from within a secure flask app.
 
+# Pictoral Overview
+
+![](/readme_img/Final-Result-00.png)
+
+![](/readme_img/Final-Result-01.png)
+
+![](/readme_img/Final-Result-02.png)
+
+![](/readme_img/Final-Result-03.png)
+
+![](/readme_img/Final-Result-04.png)
+
 # Objective
 
 Build an application which generates text given inputs, following a machine learning project structure approach.
@@ -1038,10 +1050,10 @@ flask  | 2021-04-20 21:47:47.799547: I tensorflow/core/platform/profile_utils/cp
 flask  | 2021-04-20 21:47:47.799752: I tensorflow/compiler/xla/service/service.cc:168] XLA service 0x7f08c0000b20 initialized for platform Host (this does not guarantee that XLA will be used). Devices:
 flask  | 2021-04-20 21:47:47.799783: I tensorflow/compiler/xla/service/service.cc:176]   StreamExecutor device (0): Host, Default Version
 Downloading: 100%|██████████| 665/665 [00:00<00:00, 276kB/s]
-Downloading: 100%|██████████| 498M/498M [00:43<00:00, 11.4MB/s] 
+Downloading: 100%|██████████| 498M/498M [00:43<00:00, 11.4MB/s]
 flask  | 2021-04-20 21:48:32.818042: W tensorflow/python/util/util.cc:329] Sets are not currently considered sequences, but this may change in the future, so consider avoiding using them.
 flask  | All model checkpoint layers were used when initializing TFGPT2LMHeadModel.
-flask  | 
+flask  |
 flask  | All the layers of TFGPT2LMHeadModel were initialized from the model checkpoint at gpt2.
 flask  | If your task is similar to the task the model of the checkpoint was trained on, you can already use TFGPT2LMHeadModel for predictions without further training.
 
@@ -1071,11 +1083,11 @@ There is a [sample GPT2 writer posted here](https://transformer.huggingface.co/d
 
 [TFGPT2LMHeadModel](https://huggingface.co/transformers/model_doc/gpt2.html#tfgpt2lmheadmodel) is...
 
-> The GPT2 Model transformer with a language modeling head on top (linear layer with weights tied to the input embeddings).  This model inherits from TFPreTrainedModel. Check the superclass documentation for the generic methods the library implements for all its model (such as downloading or saving, resizing the input embeddings, pruning heads etc.) This model is also a tf.keras.Model subclass. 
+> The GPT2 Model transformer with a language modeling head on top (linear layer with weights tied to the input embeddings).  This model inherits from TFPreTrainedModel. Check the superclass documentation for the generic methods the library implements for all its model (such as downloading or saving, resizing the input embeddings, pruning heads etc.) This model is also a tf.keras.Model subclass.
 
 So basically, the word embeddings are already performed, and a linear layer with weights tied to the input embeddings was created.
 
-[TFPreTrainedModel](https://huggingface.co/transformers/main_classes/model.html#transformers.TFPreTrainedModel) is the 
+[TFPreTrainedModel](https://huggingface.co/transformers/main_classes/model.html#transformers.TFPreTrainedModel) is the
 
 > takes care of storing the configuration of the models and handles methods for loading, downloading and saving models as well as a few methods common to all models to: resize the input embeddings, prune heads in the self-attention heads.
 
@@ -1122,7 +1134,7 @@ The method that works within the sponsor documents is:
 
     # get a count of the document objects
     document_count = document_objects.count()
-    
+
     # blank list to append to for documents and editors
     document_list=[]
 
@@ -1204,7 +1216,7 @@ This could be done in a future project.
 # Future Work
 
 * Text Generation Quality
-* 
+*
 * Jsonify Project
 * Pre-Fill Text Into Editing Box from Previous Generation
 * Side By Side Editing
